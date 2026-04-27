@@ -93,6 +93,9 @@ function validatePubkey(val) {
   }
 }
 
+// ── Init ──────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+
 // ── Live input handlers ───────────────────────────────────────────────────────
 $id('gv-name').addEventListener('input', async function() {
   await loadTakenNames();
@@ -237,5 +240,7 @@ function pollPayment(invoiceId) {
 
   setTimeout(() => clearInterval(interval), 1200000);
 }
+
+}); // end DOMContentLoaded
 
 window._gvLoaded = true;
