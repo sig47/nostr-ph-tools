@@ -192,18 +192,7 @@ function showInvoice(invoice, bolt11) {
 
   strDiv.textContent = payString;
 
-  if (window.QRCode) {
-    qrDiv.innerHTML = '';
-    new QRCode(qrDiv, {
-      text: payString.toUpperCase(),
-      width: 200,
-      height: 200,
-      colorDark: '#111018',
-      colorLight: '#ffffff'
-    });
-  } else {
-    qrDiv.textContent = 'QR unavailable';
-  }
+  qrDiv.innerHTML = '<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(payString) + '" width="200" height="200" style="border-radius:4px" />';
 
   $id('gv-invoice').classList.add('visible');
 
