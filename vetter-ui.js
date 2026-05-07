@@ -68,6 +68,21 @@
     .nphvet-empty { color: #6b6882; font-size: 0.88rem; padding: 20px 0; text-align: center; }
     .nphvet-ts { font-size: 0.75rem; color: #6b6882; }
 
+    /* Criteria disclosure */
+    .nphvet-criteria { margin-bottom: 24px; }
+    .nphvet-criteria summary { cursor: pointer; font-family: Sora, sans-serif; font-weight: 600;
+      font-size: 0.85rem; color: #9333ea; list-style: none; display: flex; align-items: center; gap: 6px; user-select: none; }
+    .nphvet-criteria summary::-webkit-details-marker { display: none; }
+    .nphvet-criteria summary::before { content: '▸'; font-size: 0.7rem; transition: transform 0.15s; }
+    .nphvet-criteria[open] summary::before { transform: rotate(90deg); }
+    .nphvet-criteria-body { background: #f9f8ff; border: 1px solid #e8e4f5; border-radius: 10px;
+      padding: 18px 20px; margin-top: 10px; font-size: 0.84rem; line-height: 1.75; color: #111018; }
+    .nphvet-criteria-body p { margin: 0 0 10px; }
+    .nphvet-criteria-body p:last-child { margin-bottom: 0; }
+    .nphvet-criteria-body strong { color: #111018; }
+    .nphvet-criteria-body ul { margin: 4px 0 10px 18px; padding: 0; }
+    .nphvet-criteria-body li { margin-bottom: 2px; }
+
     @media (max-width: 600px) {
       .nphvet-table th:nth-child(3), .nphvet-table td:nth-child(3) { display: none; }
     }
@@ -93,6 +108,19 @@
       </div>
       <p class="nphvet-status" id="nphvet-status"></p>
     </div>
+
+    <details class="nphvet-criteria" id="nphvet-criteria">
+      <summary>How accounts are scored</summary>
+      <div class="nphvet-criteria-body">
+        <p><strong>Web of Trust (WOT)</strong> is the most heavily weighted factor. Each account is checked against 12 trusted anchor accounts across three tiers. A follow from a Tier 1 anchor (Anita Posch, Alex Gladstein, Jack Dorsey — figures directly involved in Bitcoin humanitarian work) adds <strong>40 points</strong>. A Tier 2 follow (fiatjaf, Matt Odell, DerGigi, jb55 — core Nostr/Bitcoin builders) adds <strong>20 points</strong>, and a Tier 3 follow (Snowden, Derek Ross, Lyn Alden, NVK, Vitor Pamplona — notable community figures) adds <strong>10 points</strong>. A mutual follow between the account and any anchor adds a further <strong>5-point bonus</strong> per anchor.</p>
+        <p><strong>Activity</strong> — posting within the past 90 days adds <strong>+15 points</strong>. Going completely silent for over a year deducts <strong>20 points</strong>, since dormant accounts are a common red flag for abandoned or impersonated projects.</p>
+        <p><strong>Zap activity</strong> — actively sending zaps on Lightning (any zaps in the past 90 days, or more than 5 total) adds <strong>+15 points</strong>. It's a strong signal that the account belongs to someone genuinely participating in the Bitcoin/Nostr ecosystem.</p>
+        <p><strong>Engagement</strong> — three or more substantive replies (over 80 characters) in the past 90 days adds <strong>+10 points</strong>; lighter reply activity (brief or fewer replies) adds <strong>+3 points</strong>.</p>
+        <p><strong>Identity verification</strong> — a verified NIP-05 address adds <strong>+5 points</strong>. If the NIP-05 domain also matches the website listed in the profile, that's an additional <strong>+10 points</strong>, since it confirms control of both the Nostr identity and the associated web presence.</p>
+        <p><strong>Profile completeness</strong> — having a profile picture, a bio, and a website set adds <strong>+5 points</strong>.</p>
+        <p>Verdicts are assigned by total score: <strong>VERIFIED</strong> (75+), <strong>PROMISING</strong> (40–74), <strong>UNVERIFIED</strong> (15–39), <strong>RED FLAG</strong> (below 15). These thresholds and weights are updated periodically as the criteria are refined.</p>
+      </div>
+    </details>
 
     <div class="nphvet-report" id="nphvet-report">
       <div id="nphvet-report-badge"></div>
