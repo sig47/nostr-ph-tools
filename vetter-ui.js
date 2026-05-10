@@ -97,7 +97,7 @@
   root.className = 'nphvet'
 
   root.innerHTML = `
-    <h2>Vet a Nostr Account</h2>
+    <h2>Nostr Account Vetter</h2>
     <div class="nphvet-card">
       <textarea class="nphvet-input" id="nphvet-input"
         placeholder="Enter one npub per line for batch vetting, or a single npub to vet immediately"></textarea>
@@ -112,13 +112,16 @@
     <details class="nphvet-criteria" id="nphvet-criteria">
       <summary>How accounts are scored</summary>
       <div class="nphvet-criteria-body">
-        <p><strong>Web of Trust (WOT)</strong> is the most heavily weighted factor. Each account is checked against 12 trusted anchor accounts across three tiers. A follow from a Tier 1 anchor (Anita Posch, Alex Gladstein, Jack Dorsey — figures directly involved in Bitcoin humanitarian work) adds <strong>40 points</strong>. A Tier 2 follow (fiatjaf, Matt Odell, DerGigi, jb55 — core Nostr/Bitcoin builders) adds <strong>20 points</strong>, and a Tier 3 follow (Snowden, Derek Ross, Lyn Alden, NVK, Vitor Pamplona — notable community figures) adds <strong>10 points</strong>. A mutual follow between the account and any anchor adds a further <strong>5-point bonus</strong> per anchor.</p>
-        <p><strong>Activity</strong> — posting within the past 90 days adds <strong>+15 points</strong>. Going completely silent for over a year deducts <strong>20 points</strong>, since dormant accounts are a common red flag for abandoned or impersonated projects.</p>
-        <p><strong>Zap activity</strong> — actively sending zaps on Lightning (any zaps in the past 90 days, or more than 5 total) adds <strong>+15 points</strong>. It's a strong signal that the account belongs to someone genuinely participating in the Bitcoin/Nostr ecosystem.</p>
-        <p><strong>Engagement</strong> — three or more substantive replies (over 80 characters) in the past 90 days adds <strong>+10 points</strong>; lighter reply activity (brief or fewer replies) adds <strong>+3 points</strong>.</p>
-        <p><strong>Identity verification</strong> — a verified NIP-05 address adds <strong>+5 points</strong>. If the NIP-05 domain also matches the website listed in the profile, that's an additional <strong>+10 points</strong>, since it confirms control of both the Nostr identity and the associated web presence.</p>
+        <p><strong>Imposter detection</strong> — the account's name and display name are checked against a list of known Nostr figures (Jack Dorsey, fiatjaf, Snowden, and others). If the name matches a known figure but the npub does not, the report issues an <strong>IMPOSTER WARNING</strong> and the verdict is forced to RED FLAG regardless of score. Follower count is also surfaced as context — a high follower count combined with no WOT follows and a new account is a secondary imposter signal.</p>
+        <p><strong>Bot risk detection</strong> — a composite warning is shown when three or more of the following signals are present: high average post rate (over 15/day), very low reply ratio (bots rarely converse), unusually uniform post lengths, suspiciously regular posting intervals, or a large follow/follower asymmetry. This is a probabilistic warning, not a score deduction.</p>
+        <p><strong>Web of Trust (WOT)</strong> is the most heavily weighted scoring factor. Each account is checked against 12 trusted anchor accounts — Anita Posch, Alex Gladstein, Jack Dorsey, fiatjaf, Matt Odell, DerGigi, jb55, Snowden, Derek Ross, Lyn Alden, NVK, and Vitor Pamplona. A follow from any anchor adds <strong>20 points</strong>. A mutual follow between the account and any anchor adds a further <strong>5-point bonus</strong> per anchor.</p>
+        <p><strong>Activity</strong> — posting within the past 90 days adds <strong>+15 points</strong>. Going completely silent for over a year deducts <strong>20 points</strong>.</p>
+        <p><strong>Zap activity</strong> — actively sending zaps on Lightning (any zaps in the past 90 days, or more than 5 total) adds <strong>+15 points</strong>. A strong signal of genuine Bitcoin/Nostr participation.</p>
+        <p><strong>Engagement</strong> — three or more substantive replies (over 80 characters) in the past 90 days adds <strong>+10 points</strong>; lighter reply activity adds <strong>+3 points</strong>.</p>
+        <p><strong>Paid relay</strong> — if the account publishes to a known paid relay (relay.damus.io, nostr.wine, etc.), that adds <strong>+10 points</strong>. Bots and throwaway accounts rarely pay for relay access. No penalty for absence — many legitimate accounts use only free relays.</p>
+        <p><strong>Identity verification</strong> — a verified NIP-05 address adds <strong>+5 points</strong>. If the NIP-05 domain also matches the website listed in the profile, that's an additional <strong>+10 points</strong>.</p>
         <p><strong>Profile completeness</strong> — having a profile picture, a bio, and a website set adds <strong>+5 points</strong>.</p>
-        <p>Verdicts are assigned by total score: <strong>VERIFIED</strong> (75+), <strong>PROMISING</strong> (40–74), <strong>UNVERIFIED</strong> (15–39), <strong>RED FLAG</strong> (below 15). These thresholds and weights are updated periodically as the criteria are refined.</p>
+        <p>Verdicts are assigned by total score: <strong>VERIFIED</strong> (75+), <strong>PROMISING</strong> (40–74), <strong>UNVERIFIED</strong> (15–39), <strong>RED FLAG</strong> (below 15). Imposter matches always produce RED FLAG regardless of score.</p>
       </div>
     </details>
 
