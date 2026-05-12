@@ -46,27 +46,9 @@
     .nphvet-verdict-UNVERIFIED { background: #f1f5f9; color: #475569; }
     .nphvet-verdict-RED\\ FLAG  { background: #fee2e2; color: #b91c1c; }
 
-    /* Results table */
-    .nphvet-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-    .nphvet-table th { text-align: left; padding: 8px 12px; background: #f9f8ff; border-bottom: 2px solid #e8e4f5;
-      font-family: Sora, sans-serif; font-weight: 600; font-size: 0.78rem; color: #6b6882; text-transform: uppercase; letter-spacing: 0.04em; }
-    .nphvet-table td { padding: 10px 12px; border-bottom: 1px solid #f1f0f8; vertical-align: middle; }
-    .nphvet-table tr:last-child td { border-bottom: none; }
-    .nphvet-table tr:hover td { background: #faf9ff; }
-    .nphvet-table .npub-cell { font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem; color: #6b6882; }
-    .nphvet-table .score-cell { font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
-    .nphvet-table .btn-link { background: none; border: none; color: #9333ea; cursor: pointer; font-size: 0.82rem;
-      padding: 0; text-decoration: underline; font-family: Inter, sans-serif; }
-
-    /* Verdict pill (small, for table) */
-    .nphvet-pill { display: inline-block; font-size: 0.72rem; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
-    .nphvet-pill-VERIFIED   { background: #dcfce7; color: #15803d; }
-    .nphvet-pill-PROMISING  { background: #fef9c3; color: #854d0e; }
-    .nphvet-pill-UNVERIFIED { background: #f1f5f9; color: #475569; }
-    .nphvet-pill-RED\\ FLAG  { background: #fee2e2; color: #b91c1c; }
-
-    .nphvet-empty { color: #6b6882; font-size: 0.88rem; padding: 20px 0; text-align: center; }
-    .nphvet-ts { font-size: 0.75rem; color: #6b6882; }
+    /* npub display */
+    .nphvet-npub { font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem; color: #6b6882;
+      word-break: break-all; margin: 4px 0 16px; }
 
     /* Criteria disclosure */
     .nphvet-criteria { margin-bottom: 24px; }
@@ -82,10 +64,6 @@
     .nphvet-criteria-body strong { color: #111018; }
     .nphvet-criteria-body ul { margin: 4px 0 10px 18px; padding: 0; }
     .nphvet-criteria-body li { margin-bottom: 2px; }
-
-    @media (max-width: 600px) {
-      .nphvet-table th:nth-child(3), .nphvet-table td:nth-child(3) { display: none; }
-    }
   `
   const style = document.createElement('style')
   style.textContent = css
@@ -100,11 +78,10 @@
     <h2>Nostr Account Vetter</h2>
     <div class="nphvet-card">
       <textarea class="nphvet-input" id="nphvet-input"
-        placeholder="Enter one npub per line for batch vetting, or a single npub to vet immediately"></textarea>
-      <p class="nphvet-hint">Single npub → instant report &nbsp;·&nbsp; Multiple npubs (one per line) → batch queue, results stored</p>
+        placeholder="Enter an npub to vet (starts with npub1)"></textarea>
+      <p class="nphvet-hint">Enter a single npub to generate a report. Results are not stored — use the copy button to save.</p>
       <div class="nphvet-row">
         <button class="nphvet-btn" id="nphvet-submit">Vet Account</button>
-        <button class="nphvet-btn nphvet-btn-sec" id="nphvet-refresh">Refresh Results</button>
       </div>
       <p class="nphvet-status" id="nphvet-status"></p>
     </div>
@@ -127,23 +104,24 @@
 
     <div class="nphvet-report" id="nphvet-report">
       <div id="nphvet-report-badge"></div>
+      <div class="nphvet-npub" id="nphvet-report-npub"></div>
       <div class="nphvet-report-body" id="nphvet-report-body"></div>
-    </div>
-
-    <h2>Vetted Accounts</h2>
-    <div id="nphvet-table-wrap">
-      <p class="nphvet-empty">Loading…</p>
+      <div style="margin-top:16px;">
+        <button class="nphvet-btn nphvet-btn-sec" id="nphvet-copy">Copy Report</button>
+        <span id="nphvet-copy-status" style="font-size:0.78rem;color:#6b6882;margin-left:10px;"></span>
+      </div>
     </div>
   `
 
-  const inputEl   = document.getElementById('nphvet-input')
-  const submitBtn = document.getElementById('nphvet-submit')
-  const refreshBtn = document.getElementById('nphvet-refresh')
-  const statusEl  = document.getElementById('nphvet-status')
-  const reportEl  = document.getElementById('nphvet-report')
-  const badgeEl   = document.getElementById('nphvet-report-badge')
-  const bodyEl    = document.getElementById('nphvet-report-body')
-  const tableWrap = document.getElementById('nphvet-table-wrap')
+  const inputEl      = document.getElementById('nphvet-input')
+  const submitBtn    = document.getElementById('nphvet-submit')
+  const statusEl     = document.getElementById('nphvet-status')
+  const reportEl     = document.getElementById('nphvet-report')
+  const badgeEl      = document.getElementById('nphvet-report-badge')
+  const npubEl       = document.getElementById('nphvet-report-npub')
+  const bodyEl       = document.getElementById('nphvet-report-body')
+  const copyBtn      = document.getElementById('nphvet-copy')
+  const copyStatusEl = document.getElementById('nphvet-copy-status')
 
   // ── Markdown renderer (handles the subset we generate) ───────────────────
   function renderMarkdown(md) {
@@ -169,108 +147,63 @@
     statusEl.style.color = isError ? '#dc2626' : '#6b6882'
   }
 
-  function tsToDate(ts) {
-    return new Date(ts * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-  }
-
   // ── Show report ──────────────────────────────────────────────────────────
+  let currentReport = null
+
   function showReport(result) {
+    currentReport = result
     const vClass = result.verdict.replace(' ', '\\ ')
     badgeEl.innerHTML = `<span class="nphvet-verdict nphvet-verdict-${vClass}">${result.verdict}</span>
       <span style="font-size:0.78rem;color:#6b6882;margin-left:10px;">Score: ${result.score} &nbsp;·&nbsp; ${result.displayName}</span>`
+    npubEl.textContent = result.npub
     bodyEl.innerHTML = renderMarkdown(result.report)
+    copyStatusEl.textContent = ''
     reportEl.classList.add('visible')
     reportEl.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
-  // ── Results table ────────────────────────────────────────────────────────
-  function renderTable(rows) {
-    if (!rows.length) {
-      tableWrap.innerHTML = '<p class="nphvet-empty">No accounts vetted yet.</p>'
-      return
-    }
-    const rowsHtml = rows.map(r => {
-      const vClass = r.verdict.replace(' ', '\\ ')
-      return `<tr>
-        <td><strong>${escHtml(r.display_name || '')}</strong></td>
-        <td><span class="nphvet-pill nphvet-pill-${vClass}">${r.verdict}</span></td>
-        <td class="score-cell">${r.score}</td>
-        <td class="npub-cell">${r.npub.slice(0, 20)}…</td>
-        <td class="ts-cell nphvet-ts">${tsToDate(r.updated_at)}</td>
-        <td><button class="btn-link" data-npub="${escHtml(r.npub)}">View</button></td>
-      </tr>`
-    }).join('')
+  // ── Copy report ──────────────────────────────────────────────────────────
+  copyBtn.addEventListener('click', () => {
+    if (!currentReport) return
+    const text = [
+      'Nostr Account Vet Report',
+      `npub: ${currentReport.npub}`,
+      `Account: ${currentReport.displayName}`,
+      `Verdict: ${currentReport.verdict} (score: ${currentReport.score})`,
+      '',
+      currentReport.report,
+      '',
+      'Vetted at nostr.ph/vetter',
+    ].join('\n')
 
-    tableWrap.innerHTML = `
-      <table class="nphvet-table">
-        <thead><tr>
-          <th>Account</th><th>Verdict</th><th>Score</th>
-          <th>npub</th><th>Last vetted</th><th></th>
-        </tr></thead>
-        <tbody>${rowsHtml}</tbody>
-      </table>`
-
-    tableWrap.querySelectorAll('.btn-link').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const npub = btn.dataset.npub
-        setStatus('Loading report…')
-        const data = await apiFetch(`/results/${npub}`)
-        if (data.error) { setStatus(data.error, true); return }
-        showReport(data)
-        setStatus('')
-      })
+    navigator.clipboard.writeText(text).then(() => {
+      copyStatusEl.textContent = 'Copied!'
+      setTimeout(() => { copyStatusEl.textContent = '' }, 2000)
+    }).catch(() => {
+      copyStatusEl.textContent = 'Copy failed — select and copy manually.'
     })
-  }
-
-  function escHtml(str) {
-    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-  }
-
-  // ── Load results ─────────────────────────────────────────────────────────
-  async function loadResults() {
-    const data = await apiFetch('/results').catch(() => null)
-    if (!data || data.error) { tableWrap.innerHTML = '<p class="nphvet-empty">Could not load results.</p>'; return }
-    renderTable(data)
-  }
+  })
 
   // ── Submit ───────────────────────────────────────────────────────────────
   submitBtn.addEventListener('click', async () => {
-    const raw   = inputEl.value.trim()
-    const npubs = raw.split('\n').map(s => s.trim()).filter(s => s.startsWith('npub1'))
+    const raw  = inputEl.value.trim()
+    const npub = raw.split('\n').map(s => s.trim()).find(s => s.startsWith('npub1'))
 
-    if (!npubs.length) { setStatus('Please enter a valid npub (starts with npub1).', true); return }
+    if (!npub) { setStatus('Please enter a valid npub (starts with npub1).', true); return }
 
     submitBtn.disabled = true
     reportEl.classList.remove('visible')
 
-    if (npubs.length === 1) {
-      setStatus('Vetting account — this may take 20–40 seconds…')
-      const data = await apiFetch('/vet', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ npub: npubs[0] }),
-      }).catch(e => ({ error: e.message }))
+    setStatus('Vetting account — this may take 20–40 seconds…')
+    const data = await apiFetch('/vet', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ npub }),
+    }).catch(e => ({ error: e.message }))
 
-      if (data.error) { setStatus(`Error: ${data.error}`, true) }
-      else { showReport(data); setStatus('Done.'); loadResults() }
-
-    } else {
-      setStatus(`Queuing ${npubs.length} accounts for batch vetting…`)
-      const data = await apiFetch('/batch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ npubs }),
-      }).catch(e => ({ error: e.message }))
-
-      if (data.error) setStatus(`Error: ${data.error}`, true)
-      else setStatus(`${data.message}. Check back in a few minutes and click Refresh Results.`)
-    }
+    if (data.error) { setStatus(`Error: ${data.error}`, true) }
+    else { showReport(data); setStatus('') }
 
     submitBtn.disabled = false
   })
-
-  refreshBtn.addEventListener('click', () => { setStatus('Refreshing…'); loadResults().then(() => setStatus('')) })
-
-  // ── Init ─────────────────────────────────────────────────────────────────
-  loadResults()
 })()
